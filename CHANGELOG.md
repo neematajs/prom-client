@@ -9,7 +9,7 @@ project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Breaking
 
-- Drop support for Node.js versions 16, 18, 21 and 23
+- Drop support for Node.js versions 16, 18, 20, 21, 23 and 25
 - Metric internal storage ('hashMap') changed to a separate object, LabelMap. If you have
   subclassed the built-in metric types you may need to adjust your code.
 - Migrated test suite from Jest to Node.js built-in test runner (node:test)
