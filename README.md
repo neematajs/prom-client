@@ -1,7 +1,14 @@
-# Prometheus client for node.js [![Actions Status](https://github.com/platformatic/prom-client/workflows/Node.js%20CI/badge.svg?branch=main)](https://github.com/platformatic/prom-client/actions)
+# Prometheus client for node.js [![Actions Status](https://github.com/neematajs/prom-client/workflows/Node.js%20CI/badge.svg?branch=main)](https://github.com/neematajs/prom-client/actions)
 
 A prometheus client for Node.js that supports histogram, summaries, gauges and
 counters.
+
+This fork ports worker-thread metrics aggregation support from upstream
+[`siimon/prom-client`](https://github.com/siimon/prom-client/commit/d4d2dcb366384833951e0116caca707b5f62aa5e),
+adding `WorkerRegistry` for collecting metrics across Node.js worker threads and
+aligning the implementation with Platformatic's performance-focused approach.
+
+---
 
 This is a fork of the original [`prom-client`](https://github.com/siimon/prom-client)
 to significantly increase its performance ([up to 2x in a few cases](https://gist.github.com/mcollina/686b6823b6601c496721199e23f2d1b1)), started at
@@ -68,7 +75,7 @@ available on Linux.
 To register metrics to another registry, pass it in as `register`:
 
 ```js
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 const collectDefaultMetrics = client.collectDefaultMetrics;
 const Registry = client.Registry;
 const register = new Registry();
@@ -78,7 +85,7 @@ collectDefaultMetrics({ register });
 To use custom buckets for GC duration histogram, pass it in as `gcDurationBuckets`:
 
 ```js
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 const collectDefaultMetrics = client.collectDefaultMetrics;
 collectDefaultMetrics({ gcDurationBuckets: [0.1, 0.2, 0.3] });
 ```
@@ -86,7 +93,7 @@ collectDefaultMetrics({ gcDurationBuckets: [0.1, 0.2, 0.3] });
 To prefix metric names with your own arbitrary string, pass in a `prefix`:
 
 ```js
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 const collectDefaultMetrics = client.collectDefaultMetrics;
 const prefix = 'my_application_';
 collectDefaultMetrics({ prefix });
@@ -95,7 +102,7 @@ collectDefaultMetrics({ prefix });
 To apply generic labels to all default metrics, pass an object to the `labels` property (useful if you're working in a clustered environment):
 
 ```js
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 const collectDefaultMetrics = client.collectDefaultMetrics;
 collectDefaultMetrics({
   labels: { NODE_APP_INSTANCE: process.env.NODE_APP_INSTANCE },
@@ -109,7 +116,7 @@ Default metrics are collected on scrape of metrics endpoint,
 not on an interval.
 
 ```js
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 
 const collectDefaultMetrics = client.collectDefaultMetrics;
 
@@ -137,7 +144,7 @@ metric types.
 Counters go up, and reset when the process restarts.
 
 ```js
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 const counter = new client.Counter({
   name: 'metric_name',
   help: 'metric_help',
@@ -151,7 +158,7 @@ counter.inc(10); // Increment by 10
 Gauges are similar to Counters but a Gauge's value can be decreased.
 
 ```js
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 const gauge = new client.Gauge({ name: 'metric_name', help: 'metric_help' });
 gauge.set(10); // Set to 10
 gauge.inc(); // Increment 1
@@ -166,7 +173,7 @@ If the gauge is used for a point-in-time observation, you should provide a
 `collect` function:
 
 ```js
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 new client.Gauge({
   name: 'metric_name',
   help: 'metric_help',
@@ -180,7 +187,7 @@ new client.Gauge({
 
 ```js
 // Async version:
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 new client.Gauge({
   name: 'metric_name',
   help: 'metric_help',
@@ -218,7 +225,7 @@ The defaults buckets are intended to cover usual web/RPC requests, but they can
 be overridden. (See also [**Bucket Generators**](#bucket-generators).)
 
 ```js
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 new client.Histogram({
   name: 'metric_name',
   help: 'metric_help',
@@ -229,7 +236,7 @@ new client.Histogram({
 ##### Examples
 
 ```js
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 const histogram = new client.Histogram({
   name: 'metric_name',
   help: 'metric_help',
@@ -257,7 +264,7 @@ can be overridden by specifying a `percentiles` array. (See also
 [**Bucket Generators**](#bucket-generators).)
 
 ```js
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 new client.Summary({
   name: 'metric_name',
   help: 'metric_help',
@@ -269,7 +276,7 @@ To enable the sliding window functionality for summaries you need to add
 `maxAgeSeconds` and `ageBuckets` to the config like this:
 
 ```js
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 new client.Summary({
   name: 'metric_name',
   help: 'metric_help',
@@ -288,7 +295,7 @@ always be present, even when empty (its percentile values will be `0`). Set
 ##### Examples
 
 ```js
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 const summary = new client.Summary({
   name: 'metric_name',
   help: 'metric_help',
@@ -312,7 +319,7 @@ label names that the metric support needs to be declared here. There are two
 ways to add values to the labels:
 
 ```js
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 const gauge = new client.Gauge({
   name: 'metric_name',
   help: 'metric_help',
@@ -386,7 +393,7 @@ counter.inc({ methods: 1 });
 Static labels may be applied to every metric emitted by a registry:
 
 ```js
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 const defaultLabels = { serviceName: 'api-v1' };
 client.register.setDefaultLabels(defaultLabels);
 ```
@@ -423,7 +430,7 @@ The library supports both the old Prometheus format and the OpenMetrics format.
 The format can be set per registry. For default metrics:
 
 ```js
-const Prometheus = require('@platformatic/prom-client');
+const Prometheus = require('@nmtjs/prom-client');
 Prometheus.register.setContentType(
   Prometheus.Registry.OPENMETRICS_CONTENT_TYPE,
 );
@@ -447,7 +454,7 @@ type when creating a new registry, currently defaults to Prometheus type.
 ### Multiple registries
 
 By default, metrics are automatically registered to the global registry (located
-at `require('@platformatic/prom-client').register`). You can prevent this by specifying
+at `require('@nmtjs/prom-client').register`). You can prevent this by specifying
 `registers: []` in the metric constructor configuration.
 
 Using non-global registries requires creating a Registry instance and passing it
@@ -462,7 +469,7 @@ Merging registries of different types is undefined. The user needs to make sure
 all used registries have the same type (Prometheus or OpenMetrics versions).
 
 ```js
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 const registry = new client.Registry();
 const counter = new client.Counter({
   name: 'metric_name',
@@ -555,7 +562,7 @@ It is possible to push metrics via a
 [Pushgateway](https://github.com/prometheus/pushgateway).
 
 ```js
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 let gateway = new client.Pushgateway('http://127.0.0.1:9091');
 
 gateway.pushAdd({ jobName: 'test' })
@@ -618,7 +625,7 @@ For convenience, there are two bucket generator functions - linear and
 exponential.
 
 ```js
-const client = require('@platformatic/prom-client');
+const client = require('@nmtjs/prom-client');
 new client.Histogram({
   name: 'metric_name',
   help: 'metric_help',
