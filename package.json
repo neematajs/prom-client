@@ -1,6 +1,5 @@
 {
-	"name": "@platformatic/prom-client",
-	"version": "1.0.0",
+	"name": "@nmtjs/prom-client",
 	"description": "Client for prometheus",
 	"main": "index.js",
 	"files": [
