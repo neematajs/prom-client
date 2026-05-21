@@ -13,17 +13,17 @@
 	},
 	"scripts": {
 		"benchmarks": "node --max-heap-size=5000 ./benchmarks/index.js",
-		"test": "npm run lint && npm run check-prettier && npm run compile-typescript && npm run test-unit -- --coverage",
+		"test": "pnpm run lint && pnpm run check-prettier && pnpm run compile-typescript && pnpm run test-unit -- --coverage",
 		"lint": "eslint .",
 		"test-unit": "node --test test/*Test.js test/*/*Test.js",
 		"run-prettier": "prettier .",
-		"check-prettier": "npm run run-prettier -- --check",
+		"check-prettier": "prettier . --check",
 		"compile-typescript": "tsc --project .",
 		"prepare": "husky"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git@github.com:platformatic/prom-client.git"
+		"url": "git@github.com:neematajs/prom-client.git"
 	},
 	"keywords": [
 		"Prometheus",
@@ -32,7 +32,7 @@
 	],
 	"author": "Simon Nyberg",
 	"license": "Apache-2.0",
-	"homepage": "https://github.com/platformatic/prom-client",
+	"homepage": "https://github.com/neematajs/prom-client",
 	"devDependencies": {
 		"@clevernature/benchmark-regression": "^1.0.0",
 		"@eslint/js": "^9.29.0",

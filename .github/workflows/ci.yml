@@ -27,19 +27,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          version: 10
+          run_install: false
       - name: Restore dependencies cache
         uses: actions/cache@v4
         id: cache
         with:
           path: node_modules
-          key: ${{ matrix.os }}-${{ matrix.node-version }}-node_modules-${{ hashFiles('**/package.json') }}
+          key: ${{ matrix.os }}-${{ matrix.node-version }}-pnpm-node_modules-${{ hashFiles('**/package.json') }}
           restore-keys: |
-            ${{ matrix.os }}-${{ matrix.node-version }}-node_modules-
+            ${{ matrix.os }}-${{ matrix.node-version }}-pnpm-node_modules-
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
-        run: npm i
+        run: pnpm install --no-frozen-lockfile
       - name: Test
-        run: npm run test-unit
+        run: pnpm test-unit
   lint:
     name: Run ESLint
 
@@ -51,28 +56,42 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          version: 10
+          run_install: false
       - name: Restore dependencies cache
         uses: actions/cache@v4
         id: cache
         with:
           path: node_modules
-          key: ${{ matrix.os }}-${{ matrix.node-version }}-node_modules-${{ hashFiles('**/package.json') }}
+          key: ubuntu-latest-lts-pnpm-node_modules-${{ hashFiles('**/package.json') }}
           restore-keys: |
-            ${{ matrix.os }}-${{ matrix.node-version }}-node_modules-
+            ubuntu-latest-lts-pnpm-node_modules-
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
-        run: npm i
+        run: pnpm install --no-frozen-lockfile
       - name: Test
-        run: npm run lint && npm run check-prettier && npm run compile-typescript
+        run: pnpm lint && pnpm check-prettier && pnpm compile-typescript
   bun:
     name: Test on Bun
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Use Node.js LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          version: 10
+          run_install: false
       - uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
       - name: Install Dependencies
-        run: bun install
+        run: pnpm install --no-frozen-lockfile
       - name: Test
-        run: bun test-unit
+        run: bun run test-unit

@@ -1,0 +1,138 @@
+name: Publish
+
+permissions:
+  contents: write
+  actions: write
+  attestations: write
+  id-token: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_tests:
+        description: 'Whether to run tests before publishing'
+        type: boolean
+        required: true
+        default: false
+      release:
+        description: 'Whether to publish release'
+        type: boolean
+        required: true
+        default: true
+      pre_release:
+        description: 'Whether it is a pre-release'
+        type: boolean
+        required: true
+        default: false
+      autotag:
+        description: 'Whether to create a tag'
+        type: boolean
+        required: true
+        default: true
+      version:
+        description: 'Version to publish'
+        type: string
+        required: true
+
+jobs:
+  test:
+    if: ${{ inputs.run_tests }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          version: 10
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Test
+        run: pnpm test
+
+  publish:
+    needs: [test]
+    if: ${{ always() && (!inputs.run_tests || needs.test.result == 'success') }}
+    runs-on: ubuntu-latest
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      VERSION_TAG: v${{ inputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          version: 10
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Set version
+        run: pnpm version --allow-same-version --no-git-tag-version ${{ inputs.version }}
+
+      - name: Determine npm dist-tag
+        id: npm-tag
+        run: |
+          echo "tag=$(node -e "const version = process.argv[1]; const match = version.match(/-([0-9A-Za-z-]+)/); console.log(match ? match[1].split('.')[0] : 'latest')" "${{ inputs.version }}")" >> "$GITHUB_OUTPUT"
+
+      - name: Dry-run publish
+        run: pnpm publish --dry-run --access public --provenance --tag=${{ steps.npm-tag.outputs.tag }} --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to npm
+        run: pnpm publish --access public --provenance --tag=${{ steps.npm-tag.outputs.tag }} --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create Git tag
+        if: ${{ inputs.autotag }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.git.createRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: 'refs/tags/${{ env.VERSION_TAG }}',
+                sha: context.sha
+              })
+            } catch (error) {
+              if (error.status !== 422) {
+                throw error
+              }
+            }
+
+      - name: Publish GitHub Release
+        if: ${{ inputs.release }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: '${{ env.VERSION_TAG }}',
+              target_commitish: context.sha,
+              name: '${{ env.VERSION_TAG }}',
+              draft: false,
+              prerelease: ${{ inputs.pre_release }},
+              generate_release_notes: true
+            })
