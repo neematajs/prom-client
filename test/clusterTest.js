@@ -5,12 +5,13 @@ const assert = require('node:assert');
 const { describeEach } = require('./helpers');
 const cluster = require('cluster');
 const process = require('process');
-const Registry = require('../lib/cluster');
+const Registry = require('../lib/registry');
+const ClusterRegistry = require('../lib/cluster');
 
 describeEach([
 	['Prometheus', Registry.PROMETHEUS_CONTENT_TYPE],
 	['OpenMetrics', Registry.OPENMETRICS_CONTENT_TYPE],
-])('%s AggregatorRegistry', (tag, regType) => {
+])('%s ClusterRegistry', (tag, regType) => {
 	beforeEach(() => {
 		Registry.globalRegistry.setContentType(regType);
 	});
@@ -45,14 +46,13 @@ describeEach([
 
 	describe('aggregatorRegistry.clusterMetrics()', () => {
 		it('works properly if there are no cluster workers', async () => {
-			const AggregatorRegistry = require('../lib/cluster');
-			const ar = new AggregatorRegistry(regType);
+			const ar = new ClusterRegistry(regType);
 			const metrics = await ar.clusterMetrics();
 			assert.strictEqual(metrics, '');
 		});
 	});
 
-	describe('AggregatorRegistry.aggregate()', () => {
+	describe('Registry.aggregate()', () => {
 		// These mimic the output of `getMetricsAsJSON`.
 		const metricsArr1 = [
 			{
@@ -274,5 +274,12 @@ describeEach([
 			// Should not throw
 			cluster.emit('message', {}, unexpected);
 		});
+	});
+});
+
+describe('AggregatorRegistry', () => {
+	it('is a deprecated alias for ClusterRegistry', () => {
+		const client = require('../');
+		assert.strictEqual(client.AggregatorRegistry, client.ClusterRegistry);
 	});
 });

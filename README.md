@@ -35,8 +35,14 @@ label. (See `example/server.js` for an example using
 
 Metrics are aggregated from the global registry by default. To use a different
 registry, call
-`client.AggregatorRegistry.setRegistries(registryOrArrayOfRegistries)` from the
+`client.ClusterRegistry.setRegistries(registryOrArrayOfRegistries)` from the
 worker processes.
+
+### Usage with Node.js worker threads
+
+Node.js worker threads keep independent registries per thread. Use
+`WorkerRegistry` in a collector thread to aggregate metrics from worker threads.
+See `example/worker.js` for an example.
 
 ## API
 
@@ -478,10 +484,10 @@ If you want to use multiple or non-default registries with the Node.js `cluster`
 module, you will need to set the registry/registries to aggregate from:
 
 ```js
-const AggregatorRegistry = client.AggregatorRegistry;
-AggregatorRegistry.setRegistries(registry);
+const ClusterRegistry = client.ClusterRegistry;
+ClusterRegistry.setRegistries(registry);
 // or for multiple registries:
-AggregatorRegistry.setRegistries([registry1, registry2]);
+ClusterRegistry.setRegistries([registry1, registry2]);
 ```
 
 ### Register
@@ -514,15 +520,16 @@ instantiate them again, like you would need to do after `register.clear()`.
 #### Cluster metrics
 
 You can get aggregated metrics for all workers in a Node.js cluster with
-`await register.clusterMetrics()`. This method returns a promise that resolves
-with a metrics string suitable for Prometheus to consume.
+`await clusterRegistry.clusterMetrics()`. This method returns a promise that
+resolves with a metrics string suitable for Prometheus to consume.
 
 ```js
-const metrics = await register.clusterMetrics();
+const clusterRegistry = new client.ClusterRegistry();
+const metrics = await clusterRegistry.clusterMetrics();
 
 // - or -
 
-register
+clusterRegistry
   .clusterMetrics()
   .then(metrics => {
     /* ... */
@@ -530,6 +537,16 @@ register
   .catch(err => {
     /* ... */
   });
+```
+
+#### Worker thread metrics
+
+You can get aggregated metrics for worker threads with
+`await workerRegistry.workerMetrics()`.
+
+```js
+const workerRegistry = new client.WorkerRegistry();
+const metrics = await workerRegistry.workerMetrics();
 ```
 
 ### Pushgateway

@@ -99,6 +99,20 @@ export class Registry<
 	static merge(registers: Registry[]): Registry;
 
 	/**
+	 * Creates a new Registry instance from an array of metrics that were
+	 * created by `registry.getMetricsAsJSON()`. Metrics are aggregated using
+	 * the method specified by their `aggregator` property, or by summation if
+	 * `aggregator` is undefined.
+	 * @param metricsArr Array of metrics, each of which created by
+	 *   `registry.getMetricsAsJSON()`.
+	 * @returns aggregated registry.
+	 */
+	static aggregate<T extends RegistryContentType>(
+		metricsArr: Array<object>,
+		registryType?: T,
+	): Registry<T>;
+
+	/**
 	 * HTTP Prometheus Content-Type for metrics response headers.
 	 */
 	static PROMETHEUS_CONTENT_TYPE: PrometheusContentType;
@@ -131,7 +145,17 @@ export const prometheusContentType: PrometheusContentType;
  */
 export const openMetricsContentType: OpenMetricsContentType;
 
-export class AggregatorRegistry<
+type RegistryOrArray =
+	| Array<Registry<PrometheusContentType> | Registry<OpenMetricsContentType>>
+	| Registry<PrometheusContentType>
+	| Registry<OpenMetricsContentType>;
+
+type WorkerLike = {
+	threadId: number;
+	once?: (event: 'exit', listener: () => void) => unknown;
+};
+
+export class ClusterRegistry<
 	T extends RegistryContentType,
 > extends Registry<T> {
 	/**
@@ -161,15 +185,51 @@ export class AggregatorRegistry<
 	 *   aggregated.
 	 * @returns {void}
 	 */
-	static setRegistries(
-		regs:
-			| Array<
-					Registry<PrometheusContentType> | Registry<OpenMetricsContentType>
-			  >
-			| Registry<PrometheusContentType>
-			| Registry<OpenMetricsContentType>,
-	): void;
+	static setRegistries(regs: RegistryOrArray): void;
 }
+
+export class WorkerRegistry<T extends RegistryContentType> extends Registry<T> {
+	/**
+	 * Gets aggregated metrics for all worker threads.
+	 * @returns {Promise<string>} Promise that resolves with the aggregated
+	 * metrics.
+	 */
+	workerMetrics(): Promise<string>;
+
+	/**
+	 * Add a worker thread to the aggregation list.
+	 */
+	addWorker(worker: string | WorkerLike): void;
+
+	/**
+	 * Creates a new Registry instance from an array of metrics that were
+	 * created by `registry.getMetricsAsJSON()`. Metrics are aggregated using
+	 * the method specified by their `aggregator` property, or by summation if
+	 * `aggregator` is undefined.
+	 * @param metricsArr Array of metrics, each of which created by
+	 *   `registry.getMetricsAsJSON()`.
+	 * @returns aggregated registry.
+	 */
+	static aggregate<T extends RegistryContentType>(
+		metricsArr: Array<object>,
+		registryType?: T,
+	): Registry<T>;
+
+	/**
+	 * Sets the registry or registries to be aggregated. Call from workers to
+	 * use a registry/registries other than the default global registry.
+	 * @param regs Registry or registries to be aggregated.
+	 * @returns {void}
+	 */
+	static setRegistries(regs: RegistryOrArray): void;
+}
+
+/**
+ * @deprecated Use ClusterRegistry.
+ */
+export class AggregatorRegistry<
+	T extends RegistryContentType,
+> extends ClusterRegistry<T> {}
 
 type NoLabelNameType = never;
 

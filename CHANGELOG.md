@@ -45,12 +45,14 @@ project adheres to [Semantic Versioning](http://semver.org/).
 - fix: Skip Linux-only processOpenFileDescriptors test on non-Linux platforms
 - fix: Resolve linting errors in test files (regex escaping, JSDoc formatting)
 - fix: Resolve test failures after Jest to node:test migration (TypeError expectations, deepStrictEqual comparisons)
+- AggregatorRegistry renamed to ClusterRegistry, old name deprecated
 
 ### Added
 
 - Expanded benchmarking code
 - feat: Vendor tdigest@0.1.1 and bintrees dependencies to eliminate external dependency on unmaintained packages
 - docs: Add CLAUDE.md for Claude Code guidance with comprehensive development commands and architecture overview
+- Add WorkerRegistry for aggregating metrics from Node.js worker threads
 
 ## [15.1.3] - 2024-06-27
 
