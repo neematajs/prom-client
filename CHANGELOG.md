@@ -45,6 +45,7 @@ project adheres to [Semantic Versioning](http://semver.org/).
 - fix: Skip Linux-only processOpenFileDescriptors test on non-Linux platforms
 - fix: Resolve linting errors in test files (regex escaping, JSDoc formatting)
 - fix: Resolve test failures after Jest to node:test migration (TypeError expectations, deepStrictEqual comparisons)
+- fix: Refresh worker discovery before metrics collection to avoid stale channels after worker reloads
 - AggregatorRegistry renamed to ClusterRegistry, old name deprecated
 
 ### Added

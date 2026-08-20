@@ -86,6 +86,55 @@ describe('WorkerRegistry', () => {
 
 		await worker.terminate();
 	});
+
+	it('does not retain announcement-discovered workers after reloads', async () => {
+		const workerRegistry = new WorkerRegistry();
+		const createWorker = worker =>
+			new Worker(
+				`
+				'use strict';
+
+				const { parentPort, workerData } = require('node:worker_threads');
+				const client = require(workerData.clientPath);
+				const registry = new client.Registry();
+				const counter = new client.Counter({
+					name: 'worker_reload_counter',
+					help: 'Worker reload counter',
+					labelNames: ['worker'],
+					registers: [registry],
+				});
+
+				counter.inc({ worker: workerData.worker });
+				client.WorkerRegistry.setRegistries(registry);
+				new client.WorkerRegistry(client.Registry.PROMETHEUS_CONTENT_TYPE, false);
+				parentPort.postMessage('ready');
+				setInterval(() => {}, 1000);
+				`,
+				{
+					eval: true,
+					workerData: {
+						clientPath: Path.join(__dirname, '..'),
+						worker,
+					},
+				},
+			);
+
+		const firstWorker = createWorker('first');
+		await once(firstWorker, 'message');
+		assert.match(
+			await workerRegistry.workerMetrics(),
+			/worker_reload_counter\{worker="first"\} 1/,
+		);
+		await firstWorker.terminate();
+
+		const replacementWorker = createWorker('replacement');
+		await once(replacementWorker, 'message');
+		const metrics = await workerRegistry.workerMetrics();
+		assert.match(metrics, /worker_reload_counter\{worker="replacement"\} 1/);
+		assert.doesNotMatch(metrics, /worker="first"/);
+
+		await replacementWorker.terminate();
+	});
 });
 
 describe('WorkerRegistry.aggregate()', () => {
